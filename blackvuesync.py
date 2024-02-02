@@ -172,6 +172,26 @@ def get_filenames(file_lines):
 
     return filenames
 
+def send_dashcam_poweroff(base_url):
+    """posts to the custom firmware poweroff.cgi endpoint"""
+    try:
+        url = urllib.parse.urljoin(base_url, "poweroff.cgi")
+        request = urllib.request.Request(url)
+        response = urllib.request.urlopen(request)
+        response_status_code = response.getcode()
+        if response_status_code != 200:
+            raise RuntimeError("Error response from : %s ; status code : %s" % (base_url, response_status_code))
+
+        charset = response.info().get_param("charset", "UTF-8")
+        print([x.decode(charset) for x in response.readlines()])
+
+    except urllib.error.URLError as e:
+        raise RuntimeError("Cannot call poweroff.cgi from dashcam at address : %s; error : %s"
+                           % (base_url, e))
+    except socket.timeout as e:
+        raise UserWarning("Timeout communicating with dashcam at address : %s; error : %s" % (base_url, e))
+    except http.client.RemoteDisconnected as e:
+        raise UserWarning("Dashcam disconnected without a response; address : %s; error : %s" % (base_url, e))
 
 def get_dashcam_filenames(base_url):
     """gets the recording filenames from the dashcam"""
@@ -501,8 +521,19 @@ def sync(address, destination, grouping, download_priority, recording_filter):
     # sorts the dashcam recordings so we download them according to some priority
     sort_recordings(current_dashcam_recordings, download_priority)
 
-    for recording in current_dashcam_recordings:
-        download_recording(base_url, recording, destination)
+    # successfully downloaded recordings
+    downloaded_recordings = []
+
+    try:
+        for recording in current_dashcam_recordings:
+            download_recording(base_url, recording, destination)
+            # recording downloaded successfully, so we add it to the list
+            downloaded_recordings.append(recording)
+    finally:
+        # recordings that were not downloaded
+        remaining_recordings = [r for r in current_dashcam_recordings if r not in downloaded_recordings]
+        # returns true if any normal, event or manual recordings are remaining
+        return any(r.type in "NEM" for r in remaining_recordings)
 
 
 def is_empty_directory(dirpath):
@@ -541,6 +572,13 @@ def clean_destination(destination, grouping):
                     shutil.rmtree(group_filepath)
                 else:
                     logger.debug("DRY RUN Would remove grouping directory : %s", group_filepath)
+
+def turn_camera_off(address):
+    """
+    Send a command to power off the camera
+    """
+    base_url = "http://%s" % address
+    send_dashcam_poweroff(base_url)
 
 
 def lock(destination):
@@ -596,6 +634,8 @@ def parse_args():
                                  "from oldest to newest; ""rdate"": downloads in chronological order "
                                  "from newest to oldest; ""type"": prioritizes manual, event, normal and then parking"
                                  "recordings; defaults to ""date""")
+    arg_parser.add_argument("-o", "--off", metavar="POWER_OFF", default=False, type=bool,
+                            help="Power off the device once downloads have completed")
     arg_parser.add_argument("-f", "--filter", default=None,
                             help="downloads recordings filtered by event type and camera direction"
                                  "; e.g.: --filter PF PR downloads only Parking Front and Parking Rear recordings",
@@ -662,7 +702,9 @@ def run():
         lf_fd = lock(destination)
 
         try:
-            sync(args.address, destination, grouping, args.priority, args.filter)
+            unfinished = sync(args.address, destination, grouping, args.priority, args.filter)
+            if args.off and not unfinished:
+                turn_camera_off(args.address)
         finally:
             # removes temporary files (if we synced successfully, these are temp files from lost recordings)
             clean_destination(destination, grouping)

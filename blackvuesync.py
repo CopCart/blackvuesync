@@ -634,7 +634,7 @@ def parse_args():
                                  "from oldest to newest; ""rdate"": downloads in chronological order "
                                  "from newest to oldest; ""type"": prioritizes manual, event, normal and then parking"
                                  "recordings; defaults to ""date""")
-    arg_parser.add_argument("-o", "--off", action="store_true",
+    arg_parser.add_argument("-o", "--power-off", action="store_true",
                             help="Power off the device once downloads have completed")
     arg_parser.add_argument("-f", "--filter", default=None,
                             help="downloads recordings filtered by event type and camera direction"

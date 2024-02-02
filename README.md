@@ -22,7 +22,7 @@ A typical setup would be a periodic cron job or a Docker container running on a 
 
 * PowerOff only works with a modified firmware - see https://github.com/eyJhb/blackvue-cve-2023 on how to modify firmware, and the poweroff.cgi endpoint would look like:
 
-### `poweroff.cgi`
+### poweroff.cgi
 
 `/res/System/www/poweroff.cgi`
 ```sh
@@ -34,6 +34,7 @@ echo ""
 POST_STRING=$(/sbin/poweroff)
 echo $POST_STRING
 exec $POST_STRING
+```
 
 ### Software
 

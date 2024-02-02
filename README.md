@@ -20,6 +20,21 @@ A typical setup would be a periodic cron job or a Docker container running on a 
 
 ## Prerequisites
 
+* PowerOff only works with a modified firmware - see https://github.com/eyJhb/blackvue-cve-2023 on how to modify firmware, and the poweroff.cgi endpoint would look like:
+
+### `poweroff.cgi`
+
+`/res/System/www/poweroff.cgi`
+```sh
+#!/bin/sh
+
+echo "Content-type: text/html"    # set the data-type we want to use
+echo ""
+
+POST_STRING=$(/sbin/poweroff)
+echo $POST_STRING
+exec $POST_STRING
+
 ### Software
 
 * [Python](https://www.python.org/) 3.5+ or [Docker](https://docs.docker.com/).

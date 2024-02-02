@@ -634,7 +634,7 @@ def parse_args():
                                  "from oldest to newest; ""rdate"": downloads in chronological order "
                                  "from newest to oldest; ""type"": prioritizes manual, event, normal and then parking"
                                  "recordings; defaults to ""date""")
-    arg_parser.add_argument("-o", "--off", metavar="POWER_OFF", default=False, type=bool,
+    arg_parser.add_argument("-o", "--off", action="store_true",
                             help="Power off the device once downloads have completed")
     arg_parser.add_argument("-f", "--filter", default=None,
                             help="downloads recordings filtered by event type and camera direction"
@@ -708,7 +708,7 @@ def run():
         try:
             logger.info("Starting remote sync...")
             unfinished = sync(args.address, destination, grouping, args.priority, args.filter)
-            if args.off and not unfinished:
+            if args.power_off and not unfinished:
                 turn_camera_off(args.address)
         finally:
             # removes temporary files (if we synced successfully, these are temp files from lost recordings)

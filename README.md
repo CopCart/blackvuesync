@@ -125,6 +125,7 @@ Other options:
 * `--max-used-disk`: Downloads stop once the specified used disk percentage threshold is reached. Defaults to `90` (i.e. 90%.)
 * `--timeout`: Sets a timeout for establishing a connection to the dashcam, in seconds. Defaults to `10.0` seconds.
 * `--quiet`: Quiets down output messages, except for unexpected errors. Takes precedence over `--verbose`.
+* `--power-off`: Sends a call to the offline endpoint to power the device off - requires custom firmware.
 * `--verbose`: Increases verbosity. Can be specified multiple times to indicate additional verbosity.
 
 ### Unattended Usage

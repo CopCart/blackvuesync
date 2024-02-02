@@ -29,5 +29,8 @@ cron="${CRON:+--cron}"
 # dry-run option if DRY_RUN set to anything
 dry_run="${DRY_RUN:+--dry-run}"
 
+# power_off flag indicates if we should turn the camera off after downloads are completed
+power_off="${POWER_OFF:+--off}"
+
 /blackvuesync.py ${ADDRESS} --destination /recordings ${keep} ${grouping} ${priority} ${disk_usage} ${timeout} ${verbose} \
-    ${quiet} ${cron} ${dry_run}
+    ${quiet} ${cron} ${dry_run} ${power_off}

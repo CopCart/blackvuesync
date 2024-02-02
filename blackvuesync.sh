@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # keep option set if KEEP set
 keep=${KEEP:+--keep $KEEP}
 

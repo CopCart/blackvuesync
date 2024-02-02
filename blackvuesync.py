@@ -678,6 +678,8 @@ def run():
 
     set_logging_levels(-1 if args.quiet else args.verbose, args.cron)
 
+    logger.info(f"Parsed args: {args}")
+
     # sets socket timeout
     socket_timeout = args.timeout
     if socket_timeout <= 0:
@@ -692,6 +694,8 @@ def run():
             cutoff_date = calc_cutoff_date(args.keep)
             logger.info("Recording cutoff date : %s", cutoff_date)
 
+
+        logger.info("Preparing local paths...")
         # prepares the local file destination
         destination = args.destination or os.getcwd()
         ensure_destination(destination)
@@ -702,6 +706,7 @@ def run():
         lf_fd = lock(destination)
 
         try:
+            logger.info("Starting remote sync...")
             unfinished = sync(args.address, destination, grouping, args.priority, args.filter)
             if args.off and not unfinished:
                 turn_camera_off(args.address)

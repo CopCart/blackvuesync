@@ -47,7 +47,7 @@ services:
       TIMEOUT: 10.0
 
       # Set to a number greater than zero to increase logging verbosity.
-      VERBOSE: 0
+      VERBOSE: 1
 
       # Set to any value to quiet down logs: only unexpected errors will be
       # logged.

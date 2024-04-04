@@ -172,6 +172,25 @@ def get_filenames(file_lines):
     return filenames
 
 
+def send_dashcam_poweroff(base_url):
+    """posts to the custom firmware poweroff.cgi endpoint"""
+    try:
+        url = urllib.parse.urljoin(base_url, "poweroff.cgi")
+        request = urllib.request.Request(url)
+        response = urllib.request.urlopen(request)
+        response_status_code = response.getcode()
+        if response_status_code != 200:
+            raise RuntimeError("Error response from : %s ; status code : %s" % (base_url, response_status_code))
+
+    except urllib.request.HTTPError as e:
+        raise RuntimeError("Cannot call poweroff.cgi from dashcam at address : %s; error : %s"
+                           % (base_url, e))
+    except socket.timeout as e:
+        raise UserWarning("Timeout communicating with dashcam at address : %s; error : %s" % (base_url, e))
+    except http.client.RemoteDisconnected as e:
+        raise UserWarning("Dashcam disconnected without a response; address : %s; error : %s" % (base_url, e))
+
+
 def get_dashcam_filenames(base_url):
     """gets the recording filenames from the dashcam"""
     try:
@@ -347,7 +366,7 @@ def sort_recordings(recordings, recording_priority):
     def datetime_sort_key(recording):
         """sorts by datetime, then front/rear direction, then recording type"""
         return recording.datetime, recording_directions.find(recording.direction)
- 
+
     def rev_datetime_sort_key(recording):
         """sorts by newest to oldest datetime, then front/rear/interior direction"""
         return tomorrow - recording.datetime, recording_directions.find(recording.direction)
@@ -549,6 +568,14 @@ def clean_destination(destination, grouping):
                     logger.debug("DRY RUN Would remove grouping directory : %s", group_filepath)
 
 
+def turn_camera_off(address):
+    """
+    Send a command to power off the camera
+    """
+    base_url = "http://%s" % address
+    send_dashcam_poweroff(base_url)
+
+
 def lock(destination):
     """creates a lock to ensure only one instance is running on a given destination; adapted from:
     https://stackoverflow.com/questions/220525/ensure-a-single-instance-of-an-application-in-linux
@@ -602,6 +629,8 @@ def parse_args():
                                  "from oldest to newest; ""rdate"": downloads in chronological order "
                                  "from newest to oldest; ""type"": prioritizes manual, event, normal and then parking"
                                  "recordings; defaults to ""date""")
+    arg_parser.add_argument("-o", "--power-off", action="store_true",
+                            help="Power off the device once downloads have completed")
     arg_parser.add_argument("-f", "--filter", default=None,
                             help="downloads recordings filtered by event type and camera direction"
                                  "; e.g.: --filter PF PR downloads only Parking Front and Parking Rear recordings",
@@ -671,6 +700,8 @@ def run():
 
         try:
             sync(args.address, destination, grouping, args.priority, args.filter, max_disk_used_percent)
+            if args.power_off:
+                turn_camera_off(args.address)
         finally:
             # removes temporary files (if we synced successfully, these are temp files from lost recordings)
             clean_destination(destination, grouping)

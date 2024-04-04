@@ -20,6 +20,7 @@ ENV ADDRESS="" \
     TIMEOUT="" \
     VERBOSE=0 \
     QUIET="" \
+    POWER_OFF=0 \
     CRON=1 \
     DRY_RUN="" \
     RUN_ONCE=""

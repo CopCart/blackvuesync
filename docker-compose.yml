@@ -44,10 +44,11 @@ services:
       MAX_USED_DISK: 90
 
       # Sets the timeout in seconds for connecting to the dashcam.
-      TIMEOUT: 10.0
+      # Sets the offline flag to turn the camera off after downloads are completed
+      POWER_OFF: 1
 
       # Set to a number greater than zero to increase logging verbosity.
-      VERBOSE: 0
+      VERBOSE: 1
 
       # Set to any value to quiet down logs: only unexpected errors will be
       # logged.

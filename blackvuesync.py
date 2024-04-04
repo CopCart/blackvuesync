@@ -128,7 +128,7 @@ Recording = namedtuple("Recording", "filename base_filename group_name datetime 
 filename_re = re.compile(r"""(?P<base_filename>(?P<year>\d\d\d\d)(?P<month>\d\d)(?P<day>\d\d)
     _(?P<hour>\d\d)(?P<minute>\d\d)(?P<second>\d\d))
     _(?P<type>[NEPMIOATBRXG])
-    (?P<direction>[FRI])
+    (?P<direction>[FORI])
     (?P<upload>[LS]?)
     \.(?P<extension>mp4)""", re.VERBOSE)
 
@@ -299,6 +299,8 @@ def download_recording(base_url, recording, destination):
 
     # whether any file of a recording (video, thumbnail, gps, accel.) was downloaded
     any_downloaded = False
+    if recording is None:
+        raise UserWarning("Recording is none")
 
     # downloads the video recording
     filename = recording.filename
@@ -346,7 +348,7 @@ def sort_recordings(recordings, recording_priority):
     def datetime_sort_key(recording):
         """sorts by datetime, then front/rear direction, then recording type"""
         return recording.datetime, recording_directions.find(recording.direction)
-
+ 
     def rev_datetime_sort_key(recording):
         """sorts by newest to oldest datetime, then front/rear/interior direction"""
         return tomorrow - recording.datetime, recording_directions.find(recording.direction)
@@ -367,7 +369,7 @@ def sort_recordings(recordings, recording_priority):
     else:
         # this indicates a coding error
         raise RuntimeError("unknown recording priority : %s" % recording_priority)
-
+    recordings = [x for x in recordings if x != None]
     recordings.sort(key=sort_key)
 
 

@@ -33,6 +33,8 @@ import urllib
 import urllib.parse
 import urllib.request
 import socket
+from functools import partial
+from multiprocessing import Pool, cpu_count
 
 # logging
 logging.basicConfig(format="%(asctime)s: %(levelname)s %(message)s")
@@ -59,9 +61,6 @@ def set_logging_levels(verbosity, is_cron_mode):
         logger.setLevel(logging.DEBUG)
         cron_logger.setLevel(logging.DEBUG)
 
-
-# max disk usage percent
-max_disk_used_percent = None
 
 # socket timeout
 socket_timeout = None
@@ -286,7 +285,7 @@ def download_file(base_url, filename, destination, group_name):
         raise UserWarning("Timeout communicating with dashcam at address : %s; error : %s" % (base_url, e))
 
 
-def download_recording(base_url, recording, destination):
+def download_recording(base_url, destination, max_disk_used_percent, recording):
     """downloads the set of recordings, including gps data, for the given filename from the dashcam to the destination
     directory"""
     # first checks that we have enough room left
@@ -486,7 +485,7 @@ def prepare_destination(destination, grouping):
                 os.remove(outdated_filepath)
 
 
-def sync(address, destination, grouping, download_priority, recording_filter):
+def sync(address, destination, grouping, download_priority, recording_filter, max_disk_used_percent):
     """synchronizes the recordings at the dashcam address with the destination directory"""
     prepare_destination(destination, grouping)
 
@@ -503,8 +502,13 @@ def sync(address, destination, grouping, download_priority, recording_filter):
     # sorts the dashcam recordings so we download them according to some priority
     sort_recordings(current_dashcam_recordings, download_priority)
 
-    for recording in current_dashcam_recordings:
-        download_recording(base_url, recording, destination)
+    # prepare the download function
+    download_func = partial(download_recording, base_url, destination, max_disk_used_percent)
+
+    dl_pool = Pool(cpu_count())
+    dl_pool.map(download_func, current_dashcam_recordings)
+    dl_pool.close()
+    dl_pool.join()
 
 
 def is_empty_directory(dirpath):
@@ -626,7 +630,6 @@ def run():
     """run forrest run"""
     # dry-run is a global setting
     global dry_run
-    global max_disk_used_percent
     global cutoff_date
     global socket_timeout
 
@@ -637,6 +640,9 @@ def run():
         logger.info("DRY RUN No action will be taken.")
 
     max_disk_used_percent = args.max_used_disk
+
+    if max_disk_used_percent is None:
+        max_disk_used_percent = 100
 
     set_logging_levels(-1 if args.quiet else args.verbose, args.cron)
 
@@ -664,7 +670,7 @@ def run():
         lf_fd = lock(destination)
 
         try:
-            sync(args.address, destination, grouping, args.priority, args.filter)
+            sync(args.address, destination, grouping, args.priority, args.filter, max_disk_used_percent)
         finally:
             # removes temporary files (if we synced successfully, these are temp files from lost recordings)
             clean_destination(destination, grouping)
